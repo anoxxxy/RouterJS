@@ -24,8 +24,8 @@
         urlParams: {},
         getFragment: function () {
             console.log('===getFragment===');
-            console.log('>>window.location.hash: ', window.location.hash);
-            console.log('>>window.location: ', window.location.search);
+            //console.log('>>window.location.hash: ', window.location.hash);
+            //console.log('>>window.location: ', window.location.search);
             //var r = window.location.hash.replace(/\/$/, '');
             var r;
             if(window.location.hash != "")
@@ -37,8 +37,8 @@
         },
         add: function (route, handler) {
 
-            console.log('===add===');
-            console.log('route: : ', route);
+            //console.log('===add===');
+            //console.log('route: : ', route);
             if (typeof route == 'function') {
                 handler = route;
                 route = '';
@@ -56,21 +56,21 @@
             var fragment = frg || this.getFragment();
             console.log('fragment: : ', fragment);
             for (var i = 0; i < this.routes.length; i++) {
-                console.log('>>for-loop');
-                console.log('routes[i].route: ', this.routes[i].route);
+                //console.log('>>for-loop');
+                //console.log('routes[i].route: ', this.routes[i].route);
                 var matches = fragment.match(this.routes[i].route);
                 console.log('matches: ', matches);
                 if (matches) {
-                    matches.shift(); //remove the matched string
+                    //matches.shift(); //remove the matched string
                     this.parseUrl(matches);    //parse url parameters
                     //console.log('matches shift: ', matches);
                     if (!self.history[fragment]) {
                         this.history.push(fragment);
                     }
-                    console.log('before this.routes[i]: ', this.routes[i].handler);
+                    //console.log('before this.routes[i]: ', this.routes[i].handler);
                     this.routes[i].handler.apply({}, [matches]); //pass parameter as array
                     //this.routes[i].handler.apply({matches});  //pass parameter as string
-                    console.log('after this.routes[i]: ', this.routes[i].handler);
+                    //console.log('after this.routes[i]: ', this.routes[i].handler);
                     return this;
                 }
             }
@@ -124,29 +124,41 @@
         },
         parseUrl: function (url_) {
             console.log('===parseUrl===');
-            url_ = url_ ? url_ : window.location.hash.slice(1);
+            var url = url_ ? url_ : window.location.hash.slice(1);
             
-            var url;
-            //turn array into string with first hashtag as page name
-            if (Array.isArray(url_)) {
-                url = url_[1];   //add the params here
-                url += '&page='+url_[0];  //set page name also
-            }else 
-                url = url_trim();
+            var tmp;
+            //turn array into string with first hashtag (before slash) as "page"-key
+            if (Array.isArray(url)) {
+                if (url[0].includes('/')) {
+                    tmp = url[0].split('/');
+                    url = 'page='+tmp[0];
+                    url+= '&'+tmp[1];
+               } else {
+                    //we have only a string without parameters, we are done!
+                    return this.urlParams =  {'page': url[0]};
+               }
+            }
+            url = url.trim();
 
             //remove leading & trailing slash, avoid regex for speed
-            var uc = (url.length - 1), i = 0;
+            var uc = (url.length - 1), i = 0, qs;
             while (url.charCodeAt(i) === 47 && ++i);
             while (url.charCodeAt(uc) === 47 && --uc);
             url = url.slice(i, uc + 1)
 
+            qs = url;
+
             //split params & values and create object with parameters
-            var qs = url.substring(url.indexOf('#') + 1).split('&');
+            if (url.includes('&'))
+                qs = url.substring(url.indexOf('#') + 1).split('&');
+
+            console.log('qs: ', qs);
             //search params
             for(var i = 0, result = {}; i < qs.length; i++){
                 qs[i] = qs[i].split('=');
 
-                result[qs[i][0]] = (typeof(qs[i][1]) === 'undefined' ? undefined : decodeURIComponent(qs[i][1]) );
+                if (qs[i][0] != '' && qs[i][0] !== undefined)
+                    result[qs[i][0]] = (typeof(qs[i][1]) === 'undefined' ? undefined : decodeURIComponent(qs[i][1]) );
             }
             return this.urlParams = result;
         }
